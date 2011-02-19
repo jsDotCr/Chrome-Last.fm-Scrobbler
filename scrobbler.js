@@ -32,7 +32,7 @@ var song = null;
 const NOTIFICATION_TIMEOUT = 5000;
 const NOTIFICATION_SEPARATOR = ':::';
 
-function scrobblerNotification(text) {  
+function scrobblerNotification(text, img) {  
    var title = 'Last.fm Scrobbler';
    var body = '';
    var boom = text.split(NOTIFICATION_SEPARATOR);
@@ -45,7 +45,7 @@ function scrobblerNotification(text) {
    }
 
    var notification = webkitNotifications.createNotification(
-      'icon128.png',
+      (img || 'icon128.png'),
       title,
       body
    );
@@ -105,8 +105,15 @@ function validate(artist, track) {
    req.open('GET', validationURL, false);   
    req.send(null);  
    if(req.status == 200) {  
-      if (req.responseText != "You must supply either an artist and track name OR a musicbrainz id.")
-         return true;
+      if (req.responseText != "You must supply either an artist and track name OR a musicbrainz id." && req.responseXML){
+		var track = req.responseXML.querySelector('track');
+         return {
+			track: track.querySelector('name').textContent,
+			artist: track.querySelector('artist name').textContent,
+			album: track.querySelector('album title').textContent,
+			image: track.querySelector('album image[size="medium"]').textContent
+		 };
+		}
    }  
 
    return false;   
@@ -147,7 +154,7 @@ function nowPlaying(sender) {
             else if (http_request.responseText.split("\n")[0] == "OK") {
                   // Confirm the content_script, that the song is "now playing"
                   chrome.tabs.sendRequest(sender.tab.id, {type: "nowPlayingOK"});
-                  scrobblerNotification(notifText);
+                  scrobblerNotification(notifText, song.image);
             } else {
                alert('Last.fm responded with unknown code on nowPlaying request');
             }
@@ -164,9 +171,6 @@ function nowPlaying(sender) {
       scrobblerNotification("Unable to connect to Last.fm service. Please check your connection");
    }, AJAX_TIMEOUT);      
 }
-
-
-
 
 /**
  * Finally scrobble the song, but only if it has been playing long enough.
@@ -196,6 +200,7 @@ function submit(sender) {
             params += "&r[0]=&m[0]=&n[0]=";
 
             var notifText =  'Scrobbled' + NOTIFICATION_SEPARATOR + song.artist + " - " + song.track;
+			var notifImg = song.image;
 
             var http_request = new XMLHttpRequest();
 
@@ -209,7 +214,7 @@ function submit(sender) {
                      alert(http_request.responseText);
                   } else {
                      // notification
-                     scrobblerNotification(notifText);
+                     scrobblerNotification(notifText, notifImg);
                      
                      // stats
                      _gaq.push(['_trackEvent', 'Track scrobbled']);
@@ -258,6 +263,7 @@ chrome.extension.onRequest.addListener(
       					"track"	:	request.track,
                                     "album"     :     request.album,
       					"duration"	:	request.duration,
+						"image": request.image || null,
       					"startTime"	:	parseInt(new Date().getTime() / 1000.0)
                          };
                          

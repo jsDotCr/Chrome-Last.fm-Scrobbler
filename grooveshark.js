@@ -1,11 +1,13 @@
 function d(t) {
 	console.log('ChromeGrooveShartScrobbler: ' + t);
 }
+
 (function(){
 	var songToScrobble = detectedSong = {
 		artist: null,
 		track: null,
 		album: null,
+		image: null,
 		duration: 0
 	};
 	var originalPlaying = playing = {
@@ -30,9 +32,16 @@ function d(t) {
 		playing = originalPlaying;
 		
 		chrome.extension.sendRequest({type: 'validate', artist: songToScrobble.artist, track: songToScrobble.track, album: songToScrobble.album}, function(response) {
-			if (response === true){
-				d("Now playing: "+songToScrobble.artist+" - "+songToScrobble.track+" ("+songToScrobble.album+"). Duration: "+songToScrobble.duration);
-				chrome.extension.sendRequest({type: 'nowPlaying', artist: songToScrobble.artist, track: songToScrobble.track, album: songToScrobble.album, duration: songToScrobble.duration});
+			if (!!response){
+				songToScrobble.duration = getDuration();
+				chrome.extension.sendRequest({
+					type: 'nowPlaying', 
+					artist: response.artist, 
+					track: response.track, 
+					album: response.album, 
+					image: response.image, 
+					duration: songToScrobble.duration
+				});
 			} else {
 				d("SENDREQUEST: validate response FAIL");
 				// "NOT RECOGNIZED BY THE SERVER"
@@ -77,9 +86,9 @@ function d(t) {
 	});
 	
 	document.getElementById("playerDetails_nowPlaying").addEventListener("DOMSubtreeModified", function(){
-		var nowPlayingArtist = this.querySelectorAll("a.artist")[0].title || null;
-		var nowPlayingAlbum = this.querySelectorAll("a.album")[0].title || null;
-		var nowPlayingTrack = this.querySelectorAll("a.song")[0].title || null;
+		var nowPlayingArtist = this.querySelector("a.artist").title || null;
+		var nowPlayingAlbum = this.querySelector("a.album").title || null;
+		var nowPlayingTrack = this.querySelector("a.song").title || null;
 		detectedSong = {
 			artist: cleanTag(nowPlayingArtist),
 			album: cleanTag(nowPlayingAlbum),
@@ -110,7 +119,7 @@ function d(t) {
 				scrobbleTimeout = setTimeout(function(){
 					scrobbleInterval = setInterval(function(){
 						setPlayingTime();
-						console.log("playing: " + playing.time + " - min: " + min_time);
+						//console.log("playing: " + (playing.time / 1000) + " - min: " + min_time);
 						if ((playing.time / 1000) >= min_time) sendScrobble();
 					}, 1000);
 				}, (min_time*1000)); 
