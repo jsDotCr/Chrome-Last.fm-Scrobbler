@@ -38,7 +38,7 @@ function d(t) {
 					type: 'nowPlaying', 
 					artist: response.artist, 
 					track: response.track, 
-					album: response.album, 
+					album: response.album || songToScrobble.album, 
 					image: response.image, 
 					duration: songToScrobble.duration
 				});

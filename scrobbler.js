@@ -107,11 +107,12 @@ function validate(artist, track) {
    if(req.status == 200) {  
       if (req.responseText != "You must supply either an artist and track name OR a musicbrainz id." && req.responseXML){
 		var track = req.responseXML.querySelector('track');
+		var album = track.querySelector('album');
          return {
 			track: track.querySelector('name').textContent,
 			artist: track.querySelector('artist name').textContent,
-			album: track.querySelector('album title').textContent,
-			image: track.querySelector('album image[size="medium"]').textContent
+			album: album ? album.querySelector('title').textContent : null,
+			image: album ? album.querySelector('image[size="medium"]').textContent : null
 		 };
 		}
    }  
