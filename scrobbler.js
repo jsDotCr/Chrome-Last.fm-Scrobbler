@@ -33,24 +33,26 @@ const NOTIFICATION_TIMEOUT = 5000;
 const NOTIFICATION_SEPARATOR = ':::';
 
 function scrobblerNotification(text, img) {  
-   var title = 'Last.fm Scrobbler';
-   var body = '';
-   var boom = text.split(NOTIFICATION_SEPARATOR);
+	var title = 'Last.fm Scrobbler';
+	var body = '';
+	var boom = text.split(NOTIFICATION_SEPARATOR);
 
-   if (boom.length == 1)
-      body = boom[0];
-   else {
-      title = boom[0];
-      body = boom[1];
-   }
+	if (boom.length === 1) {
+		body = boom[0];
+	} else {
+		title = boom[0];
+		body = boom[1];
+	}
 
-   var notification = webkitNotifications.createNotification(
-      (img || 'icon128.png'),
-      title,
-      body
-   );
-   notification.show();
-   setTimeout(function() {notification.cancel()}, NOTIFICATION_TIMEOUT);
+	var notification = webkitNotifications.createNotification(
+		(img || 'icon128.png'),
+		title,
+		body
+	);
+	notification.show();
+	setTimeout(function() {
+		notification.cancel()
+	}, NOTIFICATION_TIMEOUT);
 }
 
 
@@ -58,6 +60,10 @@ function scrobblerNotification(text, img) {
  * Log in, retrieve sessionID
  */ 
 function handshake() {
+	if (!localStorage.username || !localStorage.password){
+		scrobblerNotification("No username and/or password found! Please check your last.fm login details in the options page!");
+		return false;
+	}
 	var username = localStorage.username;
 	var password = localStorage.password;
 	var currentTime = parseInt(new Date().getTime() / 1000.0);
@@ -66,23 +72,21 @@ function handshake() {
 	http_request.onreadystatechange = function() {
 		if (http_request.readyState == 4 && http_request.status == 200) {
 			switch (http_request.responseText.split("\n")[0]) {
-                     case 'OK':
-                        sessionID = http_request.responseText.split("\n")[1];
-                        nowPlayingURL = http_request.responseText.split("\n")[2];
-                        submissionURL = http_request.responseText.split("\n")[3];
-                        authFailCounter = 0;
-                        break;
-                     case 'BADAUTH':
-                        authFailCounter++;
-                        alert('Authentication failed!\n\nPlease check your username and password in options');
-                        break;
-                     default:
-                        authFailCounter++;
-                        alert('Last.fm auth server responded with error:\n' + http_request.responseText.split("\n")[0]);
-                        break;
-                  }
-
-                  
+				case 'OK':
+					sessionID = http_request.responseText.split("\n")[1];
+					nowPlayingURL = http_request.responseText.split("\n")[2];
+					submissionURL = http_request.responseText.split("\n")[3];
+					authFailCounter = 0;
+				break;
+				case 'BADAUTH':
+					authFailCounter++;
+					scrobblerNotification('Authentication failed!\n\nPlease check your username and password in options');
+				break;
+				default:
+					authFailCounter++;
+					scrobblerNotification('Last.fm auth server responded with error:\n' + http_request.responseText.split("\n")[0]);
+				break;
+			}
 		}
 	}
 	http_request.open(

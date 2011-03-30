@@ -3,19 +3,20 @@ function d(t) {
 }
 
 (function(){
-	var songToScrobble = detectedSong = {
+	var songToScrobble, detectedSong, originalPlaying, playing, scrobbletimeout, scrobbleInterval;
+	songToScrobble = detectedSong = {
 		artist: null,
 		track: null,
 		album: null,
 		image: null,
 		duration: 0
 	};
-	var originalPlaying = playing = {
+	originalPlaying = playing = {
 		isPlaying: false,
 		startPlaying: 0,
 		time: 0
 	};
-	var scrobbleTimeout = scrobbleInterval = null;
+	scrobbleTimeout = scrobbleInterval = null;
 	
 	function cleanTag(text) {
 		var t = text;
@@ -53,7 +54,7 @@ function d(t) {
 		var nowPlayingDuration = document.getElementById("player_duration").innerText || null;
 		if (nowPlayingDuration){
 			nowPlayingDuration = nowPlayingDuration.split(":");
-			return (parseInt(nowPlayingDuration[0])*60) + parseInt(nowPlayingDuration[1]);
+			return (parseInt(nowPlayingDuration[0], 10)*60) + parseInt(nowPlayingDuration[1], 10);
 		}
 	}
 	
@@ -137,7 +138,7 @@ function d(t) {
 	});
 	
 	window.onunload = function(){
-		if (scrobbleTimeout != null){
+		if (scrobbleTimeout !== null){
 			window.clearTimeout(scrobbleTimeout);
 
 			// reset the background scrobbler song data
